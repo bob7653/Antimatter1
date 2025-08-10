@@ -3,6 +3,7 @@ const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -57,8 +58,9 @@ app.use(session({
     }
 }));
 
+// Serve the index.html file for the root URL
 app.get('/', (req, res) => {
-    res.send('Welcome to the Antimatter API!');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.post('/register', async (req, res) => {
