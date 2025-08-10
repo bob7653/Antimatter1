@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Authentication</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #333;
+        }
+
+        .container {
+            background: #fff;
+            padding: 2.5rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .form-container {
+            overflow: hidden;
+            transition: all 0.5s ease-in-out;
+            height: auto;
+        }
+
+        .form-container.hidden {
+            max-height: 0;
+            padding: 0;
+            opacity: 0;
+            transform: scaleY(0);
+        }
+
+        h2 {
+            margin-bottom: 1.5rem;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .toggle-form {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .toggle-form a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .message {
+            margin-top: 1rem;
+            padding: 0.8rem;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="admin-container" class="form-container hidden">
+            <h2>Admin Panel</h2>
+            <button id="fetch-users-btn">View All Users</button>
+            <div id="users-list-container" style="margin-top: 1rem;">
+                </div>
+            <p class="toggle-form" style="margin-top: 1.5rem;">Go back to <a href="#" onclick="showLoginOnly()">login</a></p>
+        </div>
+
+        <div id="register-container" class="form-container">
+            <h2>Register</h2>
+            <form id="register-form">
+                <div class="input-group">
+                    <label for="reg-username">Username</label>
+                    <input type="text" id="reg-username" name="username" required>
+                </div>
+                <div class="input-group">
+                    <label for="reg-email">Email</label>
+                    <input type="email" id="reg-email" name="email" required>
+                </div>
+                <div class="input-group">
+                    <label for="reg-password">Password</label>
+                    <input type="password" id="reg-password" name="password" required>
+                </div>
+                <button type="submit">Register</button>
+            </form>
+            <div id="register-message" class="message"></div>
+            <p class="toggle-form">Already have an account? <a href="#" onclick="showLoginForm()">Login here</a></p>
+        </div>
+
+        <div id="login-container" class="form-container hidden">
+            <h2>Login</h2>
+            <form id="login-form">
+                <div class="input-group">
+                    <label for="log-username">Username</label>
+                    <input type="text" id="log-username" name="username" required>
+                </div>
+                <div class="input-group">
+                    <label for="log-password">Password</label>
+                    <input type="password" id="log-password" name="password" required>
+                </div>
+                <button type="submit">Login</button>
+            </form>
+            <div id="login-message" class="message"></div>
+            <p class="toggle-form">Don't have an account? <a href="#" onclick="showRegisterForm()">Register here</a> | <a href="#" onclick="showAdminPanel()">Admin Panel</a></p>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://antimatter1.onrender.com';
+
+        const registerForm = document.getElementById('register-form');
+        const loginForm = document.getElementById('login-form');
+        const registerContainer = document.getElementById('register-container');
+        const loginContainer = document.getElementById('login-container');
+        const registerMessage = document.getElementById('register-message');
+        const loginMessage = document.getElementById('login-message');
+
+        const adminContainer = document.getElementById('admin-container');
+        const fetchUsersBtn = document.getElementById('fetch-users-btn');
+        const usersListContainer = document.getElementById('users-list-container');
+
+        function showRegisterForm() {
+            loginContainer.classList.add('hidden');
+            registerContainer.classList.remove('hidden');
+            clearMessages();
+        }
+
+        function showLoginForm() {
+            registerContainer.classList.add('hidden');
+            loginContainer.classList.remove('hidden');
+            clearMessages();
+        }
+
+        function showAdminPanel() {
+            loginContainer.classList.add('hidden');
+            registerContainer.classList.add('hidden');
+            adminContainer.classList.remove('hidden');
+            clearMessages();
+        }
+
+        function showLoginOnly() {
+            adminContainer.classList.add('hidden');
+            loginContainer.classList.remove('hidden');
+            clearMessages();
+        }
+
+        function clearMessages() {
+            registerMessage.textContent = '';
+            loginMessage.textContent = '';
+            registerMessage.classList.remove('success', 'error');
+            loginMessage.classList.remove('success', 'error');
+        }
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+
+            const username = e.target.elements.username.value;
+            const email = e.target.elements.email.value;
+            const password = e.target.elements.password.value;
+
+            try {
+                const response = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    registerMessage.textContent = data.message;
+                    registerMessage.classList.add('success');
+                } else {
+                    registerMessage.textContent = data.error || 'Registration failed.';
+                    registerMessage.classList.add('error');
+                }
+            } catch (error) {
+                registerMessage.textContent = 'An error occurred. Please try again later.';
+                registerMessage.classList.add('error');
+            }
+        });
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+
+            const username = e.target.elements.username.value;
+            const password = e.target.elements.password.value;
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    loginMessage.textContent = data.message;
+                    loginMessage.classList.add('success');
+                    // In a real application, you would save the JWT token here
+                } else {
+                    loginMessage.textContent = data.error || 'Login failed.';
+                    loginMessage.classList.add('error');
+                }
+            } catch (error) {
+                loginMessage.textContent = 'An error occurred. Please try again later.';
+                loginMessage.classList.add('error');
+            }
+        });
+
+        fetchUsersBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_URL}/users`);
+                const data = await response.json();
+
+                if (response.ok) {
+                    usersListContainer.innerHTML = '<h3>Registered Users</h3>';
+                    const ul = document.createElement('ul');
+                    data.forEach(user => {
+                        const li = document.createElement('li');
+                        li.textContent = `ID: ${user.id}, Username: ${user.username}, Email: ${user.email}`;
+                        ul.appendChild(li);
+                    });
+                    usersListContainer.appendChild(ul);
+                } else {
+                    usersListContainer.innerHTML = `<p style="color: red;">${data.error || 'Failed to fetch users.'}</p>`;
+                }
+            } catch (error) {
+                usersListContainer.innerHTML = `<p style="color: red;">An error occurred while fetching users.</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
